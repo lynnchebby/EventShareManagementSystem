@@ -1,126 +1,196 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
+import JSZip from 'jszip';
+import FileSaver from 'file-saver';
+const { saveAs } = FileSaver;
 
 export default function EventGallery() {
-  const { id } = useParams(); // Grabs the specific Event ID from the URL path
-  const [eventDetails, setEventDetails] = useState(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
+  const [eventData, setEventData] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Hardcoded fallback template structures matching your thesis specifications
-  const sampleEventsInfo = {
-    1: { title: 'Rift Valley Athletics Open', venue_name: 'Afraha Stadium', location_city: 'Nakuru', event_date: '2026-06-15', organiser_name: 'Mr. John Kiprop', phone: '+254 712 345 678', email: 'kiprop@athletics.or.ke', website: 'https://riftathletics.co.ke' },
-    2: { title: 'Nairobi Tech Week 2026', venue_name: 'Sarit Centre Expo', location_city: 'Nairobi', event_date: '2026-07-20', organiser_name: 'Lynn Chebet', phone: '+254 722 111 222', email: 'info@techweek.co.ke', website: 'https://nairobitech.ke' },
-    3: { title: 'Coast Region Swimming Gala', venue_name: 'Oshwal Academy Pool', location_city: 'Mombasa', event_date: '2026-05-10', organiser_name: 'Coach Salim Ahmed', phone: '+254 733 999 888', email: 'swim@coastgala.com', website: 'https://coastswim.org' }
-  };
+  const [downloadingZip, setDownloadingZip] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
-    loadGalleryData();
+    fetchEventAndMedia();
   }, [id]);
 
-  const loadGalleryData = async () => {
-    setLoading(true);
+  const fetchEventAndMedia = async () => {
     try {
-      // 1. Fetch event record data matching this ID from your Supabase Event Records Database
-      const { data: eventData, error: eventError } = await supabase
+      // Fetch Event Details
+      const { data: event, error: eventError } = await supabase
         .from('events')
         .select('*')
         .eq('id', id)
         .single();
-
+      
       if (eventError) throw eventError;
-      setEventDetails(eventData);
+      setEventData(event);
 
-      // 2. Fetch corresponding photo links from your Supabase Visual Content Database (capped at 100)
-      const { data: photoData, error: photoError } = await supabase
+      // Fetch Associated Photos
+      const { data: media, error: mediaError } = await supabase
         .from('photos')
         .select('*')
         .eq('event_id', id)
-        .limit(100); // Strict structural enforcement of your 100-photo scope limit
-
-      if (photoError) throw photoError;
-      setPhotos(photoData || []);
+        .order('created_at', { ascending: true });
+        
+      if (mediaError) throw mediaError;
+      setPhotos(media || []);
 
     } catch (err) {
-      console.warn("Using proposal preview structures:", err.message);
-      // Fallback data structure execution for demonstration profiles
-      setEventDetails(sampleEventsInfo[id] || sampleEventsInfo[2]);
-      
-      // Generate a mock array of 24 sample items to demonstrate structural lazy loading performance
-      const mockPhotosArray = Array.from({ length: 24 }, (_, index) => ({
-        id: index + 1,
-        url: `https://picsum.photos/seed/${id}-${index}/600/400`,
-        caption: `Event Photograph Row Item #${index + 1}`
-      }));
-      setPhotos(mockPhotosArray);
+      console.error("Gallery Fetch Error:", err.message);
+      alert("System Error: Could not locate this network registry.");
+      navigate('/');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <p style={{ textAlign: 'center', color: '#6b7280', marginTop: '40px' }}>Loading Visual Content databases...</p>;
-  if (!eventDetails) return <p style={{ textAlign: 'center', color: '#ef4444' }}>Specified event entry could not be found.</p>;
+  const handleBulkDownload = async () => {
+    if (photos.length === 0) return alert("System Notice: No media assets available to download.");
+    
+    setDownloadingZip(true);
+    setDownloadProgress(0);
+    const zip = new JSZip();
+    const folder = zip.folder(`${eventData.title.replace(/\s+/g, '_')}_Archive`);
+
+    try {
+      // Fetch all images as binary blobs
+      const fetchPromises = photos.map(async (photo, index) => {
+        try {
+          const response = await fetch(photo.original_url);
+          const blob = await response.blob();
+          
+          // Extract extension from URL, default to jpg
+          const urlParts = photo.original_url.split('.');
+          const ext = urlParts[urlParts.length - 1].split('?')[0] || 'jpg';
+          
+          folder.file(`Asset_${String(index + 1).padStart(3, '0')}.${ext}`, blob);
+          
+          // Update progress purely for UX
+          setDownloadProgress(prev => prev + (100 / photos.length));
+        } catch (fetchErr) {
+          console.error("Failed to fetch asset:", photo.original_url);
+        }
+      });
+
+      await Promise.all(fetchPromises);
+
+      // Generate the ZIP file
+      const zipContent = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipContent, `${eventData.title}_Media_Archive.zip`);
+      
+    } catch (err) {
+      alert(`Compression Protocol Failed: ${err.message}`);
+    } finally {
+      setDownloadingZip(false);
+      setDownloadProgress(0);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', color: '#4c1d95' }}>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 2s linear infinite', marginBottom: '16px' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+        <span style={{ fontSize: '15px', fontWeight: '600' }}>Decrypting Secure Vault...</span>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {/* Back Navigation Action Link */}
-      <Link to="/" style={{ display: 'inline-block', marginBottom: '20px', color: '#1d4ed8', textDecoration: 'none', fontWeight: '500' }}>
-        ← Back to Discovery Feed
+    <div style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* Navigation Breadcrumb */}
+      <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#64748b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', marginBottom: '32px', transition: 'color 0.2s' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Return to Global Feed
       </Link>
 
-      {/* Structured Split Grid: Left Header Info, Right Organiser Contact Card */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '40px', alignItems: 'start' }}>
+      {/* Header & Controls Section */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', background: '#ffffff', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.02)', marginBottom: '40px' }}>
+        
         <div>
-          <h1 style={{ fontSize: '30px', color: '#111827', marginBottom: '10px' }}>{eventDetails.title}</h1>
-          <p style={{ fontSize: '16px', color: '#4b5563', marginBottom: '6px' }}>📍 {eventDetails.venue_name}, {eventDetails.location_city}</p>
-          <p style={{ fontSize: '14px', color: '#9ca3af' }}>📅 {new Date(eventDetails.event_date).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <div style={{ marginTop: '15px', display: 'inline-block', background: '#eff6ff', color: '#1d4ed8', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '600' }}>
-            📸 Gallery Status: Curated Content (Max 100 Entries Enforced)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', background: eventData.is_private ? '#fff7ed' : '#f0fdf4', color: eventData.is_private ? '#ea580c' : '#10b981', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', border: eventData.is_private ? '1px solid #ffedd5' : '1px solid #dcfce3' }}>
+              {eventData.is_private ? 'Secure Private Vault' : 'Public Array'}
+            </span>
+            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+              {new Date(eventData.event_date).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
           </div>
+          <h1 style={{ margin: '0 0 12px 0', fontSize: '36px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.5px' }}>
+            {eventData.title}
+          </h1>
+          <p style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: '#475569', fontWeight: '500' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            {eventData.venue_name}, {eventData.location_city}
+          </p>
         </div>
 
-        {/* Organiser Information Contact Block Profile Card (Chapter 1 Compliance) */}
-        <div style={{ background: '#ffffff', padding: '20px', borderRadius: '10px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <h3 style={{ fontSize: '16px', color: '#111827', marginBottom: '12px', borderBottom: '1px solid #f3f4f6', paddingBottom: '6px' }}>Organiser Business Desk</h3>
-          <p style={{ fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>👤 {eventDetails.organiser_name || 'Event Management Team'}</p>
-          <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '6px' }}>📞 Phone: {eventDetails.phone || 'Not provided'}</p>
-          <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '6px' }}>✉️ Email: {eventDetails.email || 'Not provided'}</p>
-          {eventDetails.website && (
-            <p style={{ fontSize: '13px', color: '#1d4ed8', marginTop: '8px' }}>
-              🌐 <a href={eventDetails.website} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Visit Official Website</a>
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Main Fluid Grid Image Gallery Block Matrix */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-        {photos.map((photo) => (
-          <div 
-            key={photo.id} 
-            style={{ background: '#ffffff', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+        {/* The New Bulk Download Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
+          <button 
+            onClick={handleBulkDownload} 
+            disabled={downloadingZip || photos.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', background: downloadingZip ? '#c4b5fd' : '#4c1d95', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: (downloadingZip || photos.length === 0) ? 'not-allowed' : 'pointer', fontSize: '15px', fontWeight: '800', boxShadow: '0 4px 10px rgba(76, 29, 149, 0.2)', transition: 'all 0.2s' }}
           >
-            {/* Native Browser Lazy-Loading Enforcement */}
-            <img 
-              src={photo.url} 
-              alt={photo.caption || 'Event image'} 
-              loading="lazy" 
-              style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block', background: '#f3f4f6' }}
-            />
-            <div style={{ padding: '12px' }}>
-              <p style={{ fontSize: '13px', color: '#4b5563', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {photo.caption || `Uncompressed Capture _IMG_${photo.id}.jpg`}
-              </p>
-            </div>
-          </div>
-        ))}
+            {downloadingZip ? (
+              <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 2s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line></svg> Packaging Files...</>
+            ) : (
+              <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Archive (.zip)</>
+            )}
+          </button>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+            {photos.length} Total Assets
+          </span>
+        </div>
       </div>
 
-      {/* Zero State Gallery Warning Safeguard */}
-      {photos.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '6px 0', color: '#6b7280' }}>
-          <p>No photographs have been cataloged in this archive yet.</p>
+      {/* Progress Bar for ZIP (Only shows when downloading) */}
+      {downloadingZip && (
+        <div style={{ marginBottom: '40px', background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#4c1d95', marginBottom: '8px' }}>
+            <span>Compressing Assets</span>
+            <span>{Math.round(downloadProgress)}%</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ width: `${downloadProgress}%`, height: '100%', background: 'linear-gradient(90deg, #4c1d95, #7c3aed)', transition: 'width 0.2s ease-out' }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* The Media Grid (With Lazy Loading Enabled) */}
+      {photos.length > 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {photos.map(photo => (
+            <div key={photo.id} style={{ background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'transform 0.2s', ':hover': { transform: 'scale(1.02)' } }}>
+              {/* NOTE: loading="lazy" is the performance optimization trick here! */}
+              <img 
+                src={photo.original_url} 
+                alt="Event Asset" 
+                loading="lazy" 
+                style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }} 
+              />
+              <a 
+                href={photo.original_url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ display: 'block', width: '100%', padding: '12px', background: '#ffffff', color: '#475569', textAlign: 'center', fontSize: '13px', fontWeight: '700', textDecoration: 'none', borderTop: '1px solid #e2e8f0' }}
+              >
+                View Full Resolution
+              </a>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '100px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <h3 style={{ color: '#0f172a', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Array Empty</h3>
+          <p style={{ color: '#64748b', margin: '0', fontSize: '15px', fontWeight: '500' }}>The deployment manager has not synchronized any media assets to this node yet.</p>
         </div>
       )}
     </div>
