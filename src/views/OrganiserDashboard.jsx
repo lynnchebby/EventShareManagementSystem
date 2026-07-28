@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
-import emailjs from '@emailjs/browser'; // NEW: Imported EmailJS
+import emailjs from '@emailjs/browser'; 
 
 export default function OrganiserDashboard() {
   // --- Create Form States ---
@@ -12,8 +12,6 @@ export default function OrganiserDashboard() {
   const [venue, setVenue] = useState('');
   const [city, setCity] = useState('Nairobi');
   const [date, setDate] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringPattern, setRecurringPattern] = useState('none'); 
   const [organiserName, setOrganiserName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -33,7 +31,6 @@ export default function OrganiserDashboard() {
   const [editCity, setEditCity] = useState('Nairobi');
   const [editEventType, setEditEventType] = useState('tech'); 
   const [editDate, setEditDate] = useState(''); 
-  const [editRecurringPattern, setEditRecurringPattern] = useState('none'); 
   const [editOrganiserName, setEditOrganiserName] = useState(''); 
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -57,6 +54,9 @@ export default function OrganiserDashboard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      
+      // Auto-fills the email, but leaves it editable for the user
+      setEmail(session.user.email);
 
       const { data, error } = await supabase
         .from('events')
@@ -194,8 +194,6 @@ export default function OrganiserDashboard() {
           venue_name: venue, 
           location_city: city, 
           event_date: date, 
-          is_recurring: isRecurring, 
-          recurring_pattern: recurringPattern, 
           event_type: eventType, 
           is_private: false, 
           passcode: null, 
@@ -223,31 +221,29 @@ export default function OrganiserDashboard() {
 
       setStatusMessage('Deployment Complete. Triggering email notifications to subscribers...');
 
-      // NEW: Fetch subscribers and trigger EmailJS
       const { data: subs } = await supabase.from('subscriptions').select('attendee_email').eq('organiser_email', session.user.email);
       
       if (subs && subs.length > 0) {
         const emailPromises = subs.map(sub => {
           return emailjs.send(
-            'service_7664bkp', // <--- REPLACE THIS
-            'template_e38ztqb', // <--- REPLACE THIS
+            'YOUR_SERVICE_ID', 
+            'YOUR_TEMPLATE_ID', 
             {
               to_email: sub.attendee_email,
               organiser_name: organiserName,
               event_name: title,
               event_date: date
             },
-            'KB-iSG5H1iEZlcRsZ' // <--- REPLACE THIS
+            'YOUR_PUBLIC_KEY' 
           );
         });
         await Promise.all(emailPromises);
         setStatusMessage('Emails dispatched successfully!');
       }
 
-      setTitle(''); setShortDescription(''); setDetailedDescription(''); setVenue(''); setDate(''); setRecurringPattern('none'); setSelectedFiles([]);
+      setTitle(''); setShortDescription(''); setDetailedDescription(''); setVenue(''); setDate(''); setSelectedFiles([]);
       fetchMyDeployedEvents();
       
-      // Clear status after 3 seconds
       setTimeout(() => setStatusMessage(''), 3000);
 
     } catch (error) {
@@ -259,7 +255,7 @@ export default function OrganiserDashboard() {
 
   const handleUpdateEventDetails = async (id) => {
     try {
-      const { error } = await supabase.from('events').update({ title: editTitle, short_description: editShortDescription, detailed_description: editDetailedDescription, venue_name: editVenue, location_city: editCity, event_type: editEventType, event_date: editDate, recurring_pattern: editRecurringPattern, organiser_id: editOrganiserName, phone: editPhone, email: editEmail, website: editWebsite }).eq('id', id);
+      const { error } = await supabase.from('events').update({ title: editTitle, short_description: editShortDescription, detailed_description: editDetailedDescription, venue_name: editVenue, location_city: editCity, event_type: editEventType, event_date: editDate, organiser_id: editOrganiserName, phone: editPhone, email: editEmail, website: editWebsite }).eq('id', id);
       if (error) throw error;
       setEditingEventId(null);
       fetchMyDeployedEvents();
@@ -312,14 +308,6 @@ export default function OrganiserDashboard() {
               
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }} />
               
-              <select value={recurringPattern} onChange={(e) => setRecurringPattern(e.target.value)} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '14px', outline: 'none' }}>
-                <option value="none">Occurrence: One-Time Event</option>
-                <option value="weekly">Occurrence: Recurs Weekly</option>
-                <option value="monthly">Occurrence: Recurs Monthly</option>
-                <option value="bi-annually">Occurrence: Recurs Bi-Annually</option>
-                <option value="annually">Occurrence: Recurs Annually</option>
-              </select>
-
               <textarea 
                 placeholder="Short Description (Shown on Discovery Feed)" 
                 value={shortDescription} 
@@ -365,11 +353,12 @@ export default function OrganiserDashboard() {
               style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }} 
             />
             
+            {/* UPDATED: Fully Editable again */}
             <input 
               type="email" 
               placeholder="Email Address" 
               value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value)}
               required 
               style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }} 
             />
@@ -496,21 +485,6 @@ export default function OrganiserDashboard() {
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Occurrence</span>
-          <select 
-            value={editRecurringPattern} 
-            onChange={(e) => setEditRecurringPattern(e.target.value)} 
-            style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#fff', outline: 'none', color: '#0f172a' }}
-          >
-            <option value="none">One-Time Event</option>
-            <option value="weekly">Recurs Weekly</option>
-            <option value="monthly">Recurs Monthly</option>
-            <option value="bi-annually">Recurs Bi-Annually</option>
-            <option value="annually">Recurs Annually</option>
-          </select>
-        </label>
-
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Organiser Name</span>
           <input 
             type="text" 
@@ -535,12 +509,13 @@ export default function OrganiserDashboard() {
           />
         </label>
         
+        {/* UPDATED: Fully Editable again */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Network Email</span>
           <input 
             type="email" 
             value={editEmail} 
-            onChange={(e) => setEditEmail(e.target.value)} 
+            onChange={(e) => setEditEmail(e.target.value)}
             style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#0f172a' }} 
           />
         </label>
@@ -601,7 +576,7 @@ export default function OrganiserDashboard() {
                           <button onClick={() => toggleExpandGalleryManager(ev.id)} style={{ padding: '8px 16px', background: expandedEventPhotosId === ev.id ? '#0f172a' : '#ffffff', border: '1px solid #cbd5e1', color: expandedEventPhotosId === ev.id ? '#ffffff' : '#334155', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s' }}>
                             {expandedEventPhotosId === ev.id ? 'Retract Database' : 'View Record'}
                           </button>
-                          <button onClick={() => { setEditingEventId(ev.id); setEditTitle(ev.title); setEditShortDescription(ev.short_description || ''); setEditDetailedDescription(ev.detailed_description || ''); setEditVenue(ev.venue_name); setEditCity(ev.location_city); setEditEventType(ev.event_type || 'tech'); setEditDate(ev.event_date || ''); setEditRecurringPattern(ev.recurring_pattern || 'none'); setEditOrganiserName(ev.organiser_id || ''); setEditPhone(ev.phone || ''); setEditEmail(ev.email || ''); setEditWebsite(ev.website || ''); }} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>Edit Record</button>
+                          <button onClick={() => { setEditingEventId(ev.id); setEditTitle(ev.title); setEditShortDescription(ev.short_description || ''); setEditDetailedDescription(ev.detailed_description || ''); setEditVenue(ev.venue_name); setEditCity(ev.location_city); setEditEventType(ev.event_type || 'tech'); setEditDate(ev.event_date || ''); setEditOrganiserName(ev.organiser_id || ''); setEditPhone(ev.phone || ''); setEditEmail(ev.email || ''); setEditWebsite(ev.website || ''); }} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>Edit Record</button>
                           <button onClick={() => handleDeleteEventRecord(ev.id)} style={{ padding: '8px 16px', background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>Delete Record</button>
                         </div>
                       </div>
