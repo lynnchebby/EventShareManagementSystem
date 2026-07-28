@@ -61,7 +61,7 @@ export default function SavedArchives() {
           Personal Archives
         </h2>
         <p style={{ color: '#64748b', fontSize: '16px', margin: '0', fontWeight: '500' }}>
-          Your securely curated collection of pinned media networks and event vaults.
+          Your pinned events
         </p>
       </div>
 

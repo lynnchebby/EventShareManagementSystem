@@ -93,7 +93,7 @@ export default function PerformanceAnalytics() {
           Network Analytics
         </h2>
         <p style={{ color: '#64748b', fontSize: '16px', margin: '0', fontWeight: '500' }}>
-          Real-time telemetry and infrastructure utilization for {displayName}.
+          Live network and system monitoring for {displayName}.
         </p>
       </div>
 
@@ -136,12 +136,12 @@ export default function PerformanceAnalytics() {
       <div style={{ background: '#ffffff', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '40px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
           <div>
-            <h3 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '18px', fontWeight: '800' }}>Global Storage Matrix</h3>
+            <h3 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '18px', fontWeight: '800' }}>Global Storage Usage</h3>
             <p style={{ margin: '0', color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Overall account capacity across all event sub-directories.</p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <span style={{ fontSize: '24px', fontWeight: '800', color: '#4c1d95' }}>{storagePercentage}%</span>
-            <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Utilized</span>
+            <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Used</span>
           </div>
         </div>
         
@@ -157,7 +157,7 @@ export default function PerformanceAnalytics() {
       {/* Recent Deployments Table */}
       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-          <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800' }}>Recent Architectural Deployments</h3>
+          <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800' }}>Recently Deployed Events</h3>
         </div>
         
         {recentEvents.length > 0 ? (
@@ -165,10 +165,10 @@ export default function PerformanceAnalytics() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Signature</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Name</th>
                   <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Timestamp</th>
-                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Protocol</th>
-                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Assets Hosted</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Access</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Media Assets</th>
                   <th style={{ padding: '16px 24px' }}></th>
                 </tr>
               </thead>

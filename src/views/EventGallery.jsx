@@ -113,7 +113,7 @@ export default function EventGallery() {
       {/* Header & Controls Section */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', background: '#ffffff', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.02)', marginBottom: '40px' }}>
         
-        <div>
+        <div style={{ flex: 1, minWidth: '300px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
             <span style={{ fontSize: '11px', background: eventData.is_private ? '#fff7ed' : '#f0fdf4', color: eventData.is_private ? '#ea580c' : '#10b981', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', border: eventData.is_private ? '1px solid #ffedd5' : '1px solid #dcfce3' }}>
               {eventData.is_private ? 'Secure Private Vault' : 'Public Array'}
@@ -129,6 +129,39 @@ export default function EventGallery() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
             {eventData.venue_name}, {eventData.location_city}
           </p>
+
+          {/* UPDATED: Detailed Description Rendering */}
+          {eventData.detailed_description && (
+            <p style={{ margin: '16px 0 0 0', fontSize: '15px', color: '#475569', lineHeight: '1.6', maxWidth: '600px' }}>
+              {eventData.detailed_description}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', marginTop: '24px', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+            {eventData.email && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Support Email</p>
+                  <p style={{ fontSize: '14px', color: '#0f172a', margin: '0', fontWeight: '600' }}>{eventData.email}</p>
+                </div>
+              </div>
+            )}
+            
+            {eventData.phone && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Support Contact</p>
+                  <p style={{ fontSize: '14px', color: '#0f172a', margin: '0', fontWeight: '600' }}>{eventData.phone}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* The New Bulk Download Button */}
@@ -190,7 +223,7 @@ export default function EventGallery() {
         <div style={{ textAlign: 'center', padding: '100px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
           <h3 style={{ color: '#0f172a', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Array Empty</h3>
-          <p style={{ color: '#64748b', margin: '0', fontSize: '15px', fontWeight: '500' }}>The deployment manager has not synchronized any media assets to this node yet.</p>
+          <p style={{ color: '#64748b', margin: '0', fontSize: '15px', fontWeight: '500' }}>No media files have been sent to this node yet.</p>
         </div>
       )}
     </div>

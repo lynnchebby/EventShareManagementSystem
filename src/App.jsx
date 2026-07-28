@@ -12,7 +12,9 @@ import SystemAdminDashboard from './views/SystemAdminDashboard';
 
 export default function App() {
   const [session, setSession] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  
+  // NEW: Instantly load the role from LocalStorage so there is zero delay on page refresh
+  const [userRole, setUserRole] = useState(localStorage.getItem('event_user_role') || null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function App() {
       } else {
         activeUserId = null;
         setUserRole(null);
+        localStorage.removeItem('event_user_role'); // Clear cache on logout
         setCheckingAuth(false);
       }
     });
@@ -49,9 +52,13 @@ export default function App() {
     try {
       const { data, error } = await supabase.from('profiles').select('role').eq('id', userId).single();
       if (error) throw error;
-      setUserRole(data?.role || 'attendee');
+      
+      const fetchedRole = data?.role || 'attendee';
+      setUserRole(fetchedRole);
+      localStorage.setItem('event_user_role', fetchedRole); // Save to cache
     } catch (err) {
       setUserRole('attendee');
+      localStorage.setItem('event_user_role', 'attendee');
     } finally {
       setCheckingAuth(false);
     }
@@ -59,6 +66,7 @@ export default function App() {
 
   const handleSystemLogout = async () => {
     try {
+      localStorage.removeItem('event_user_role'); // Purge cache on manual logout
       await supabase.auth.signOut();
       window.location.href = "/login";
     } catch (err) {
@@ -77,7 +85,7 @@ export default function App() {
     );
   }
 
-  // Define a style function for NavLinks to dynamically apply colors based on active state
+  // Dynamic style function for NavLinks to toggle the purple background only when active
   const navLinkStyle = ({ isActive }) => ({
     display: 'flex', 
     alignItems: 'center', 
@@ -85,8 +93,12 @@ export default function App() {
     textDecoration: 'none', 
     fontWeight: '600', 
     fontSize: '14px', 
-    transition: 'color 0.2s',
-    color: isActive ? '#4c1d95' : '#475569',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    transition: 'all 0.2s',
+    background: isActive ? '#4c1d95' : 'transparent',
+    color: isActive ? '#ffffff' : '#475569',
+    boxShadow: isActive ? '0 2px 4px rgba(76, 29, 149, 0.2)' : 'none',
   });
 
   return (
@@ -99,12 +111,13 @@ export default function App() {
         position: 'relative'
       }}>
         
-        {/* Injecting CSS to handle the hover effects on the navigation links */}
+        {/* Injecting CSS to handle the hover effects and white SVG colors when active */}
         <style>
           {`
-            .nav-item:hover { color: #4c1d95 !important; }
-            .nav-item:hover svg { stroke: #4c1d95 !important; }
-            .signout-btn:hover { color: #ef4444 !important; }
+            .nav-item:hover:not(.active) { color: #4c1d95 !important; background: #f1f5f9; }
+            .nav-item:hover:not(.active) svg { stroke: #4c1d95 !important; }
+            .nav-item.active svg { stroke: #ffffff !important; }
+            .signout-btn:hover { color: #ef4444 !important; background: #fef2f2; border-radius: 8px; }
             .signout-btn:hover svg { stroke: #ef4444 !important; }
           `}
         </style>
@@ -137,17 +150,17 @@ export default function App() {
               </div>
               
               {/* Navigation Links & User Controls */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 
                 {/* Profile Identity Badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: '#f8fafc', borderRadius: '30px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: userRole === 'organiser' ? '#7c3aed' : '#10b981' }}></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: '#f8fafc', borderRadius: '30px', border: '1px solid #e2e8f0', marginRight: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: userRole === 'admin' ? '#ef4444' : userRole === 'organiser' ? '#7c3aed' : '#10b981' }}></div>
                   <span style={{ fontSize: '13px', color: '#475569', fontWeight: '600' }}>
                     <span style={{ color: '#0f172a', textTransform: 'capitalize' }}>{userRole}</span> &nbsp;|&nbsp; {session.user.email}
                   </span>
                 </div>
                 
-                <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }}></div>
+                <div style={{ width: '1px', height: '24px', background: '#e2e8f0', marginRight: '8px' }}></div>
                 
                 {/* Global Link: Discovery Feed */}
                 <NavLink to="/" end className="nav-item" style={navLinkStyle}>
@@ -155,13 +168,11 @@ export default function App() {
                   Discovery
                 </NavLink>
 
-                {/* ATTENDEE EXCLUSIVE ROUTING */}
-                {userRole !== 'organiser' && (
-                  <NavLink to="/saved" className="nav-item" style={navLinkStyle}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                    Archives
-                  </NavLink>
-                )}
+                {/* GLOBAL LINK: Archives (Now visible to everyone) */}
+                <NavLink to="/saved" className="nav-item" style={navLinkStyle}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                  Archives
+                </NavLink>
 
                 {/* ORGANISER EXCLUSIVE ROUTING */}
                 {userRole === 'organiser' && (
@@ -171,18 +182,23 @@ export default function App() {
                       Analytics
                     </NavLink>
                     
-                    {/* Note: Kept as standard Link to preserve the solid button styling, but updated the color logic if active */}
-                    <NavLink to="/organiser" style={({ isActive }) => ({ 
-                      display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '13px', 
-                      background: isActive ? '#3b0764' : '#4c1d95', 
-                      color: '#ffffff', padding: '8px 16px', borderRadius: '8px', 
-                      boxShadow: isActive ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : '0 2px 8px rgba(76, 29, 149, 0.25)',
-                      transition: 'all 0.2s'
-                    })}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    <NavLink to="/organiser" className="nav-item" style={navLinkStyle}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                      </svg>
                       Workspace
                     </NavLink>
                   </>
+                )}
+
+                {/* ADMIN EXCLUSIVE ROUTING: The Admin Link */}
+                {userRole === 'admin' && (
+                   <NavLink to="/admin" className="nav-item" style={navLinkStyle}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    Admin Console
+                  </NavLink>
                 )}
 
                 {/* Global Link: Settings */}
@@ -190,44 +206,46 @@ export default function App() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                   Settings
                 </NavLink>
-                
-                <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }}></div>
+              
+                <div style={{ width: '1px', height: '24px', background: '#e2e8f0', margin: '0 8px' }}></div>
 
                 {/* System Disconnect */}
                 <button
                   onClick={handleSystemLogout}
                   className="signout-btn"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '14px', fontWeight: '600', padding: '8px', transition: 'color 0.2s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '14px', fontWeight: '600', padding: '8px 16px', transition: 'all 0.2s' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                   Sign Out
                 </button>
               </div>
             </nav>
+            {/* The Horizontal Purple Gradient Line */}
+            <div style={{ width: '100%', height: '2px', background: 'linear-gradient(90deg, #4c1d95 0%, #a855f7 50%, #4c1d95 100%)' }}></div>
           </div>
         )}
 
         {/* Global Structural Routes Engine */}
         <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 24px 80px 24px' }}>
-         <Routes>
-  <Route path="/login" element={!session ? <LoginAuth /> : <Navigate to="/" />} />
-  
-  {/* Authenticated Application Routes */}
-  <Route path="/" element={session ? <HomeDiscover /> : <Navigate to="/login" />} />
-  <Route path="/event/:id" element={session ? <EventGallery /> : <Navigate to="/login" />} />
-  
-  {/* Organiser Exclusive Routes */}
-  <Route path="/organiser" element={session ? (userRole === 'organiser' ? <OrganiserDashboard /> : <Navigate to="/" />) : <Navigate to="/login" />} />
-  <Route path="/reports" element={session ? (userRole === 'organiser' ? <PerformanceAnalytics /> : <Navigate to="/" />) : <Navigate to="/login" />} />
+          <Routes>
+            <Route path="/login" element={!session ? <LoginAuth /> : <Navigate to="/" />} />
+            
+            {/* Authenticated Application Routes */}
+            <Route path="/" element={session ? <HomeDiscover /> : <Navigate to="/login" />} />
+            <Route path="/event/:id" element={session ? <EventGallery /> : <Navigate to="/login" />} />
+            
+            {/* Organiser Exclusive Routes */}
+            <Route path="/organiser" element={session ? (userRole === 'organiser' ? <OrganiserDashboard /> : <Navigate to="/" />) : <Navigate to="/login" />} />
+            <Route path="/reports" element={session ? (userRole === 'organiser' ? <PerformanceAnalytics /> : <Navigate to="/" />) : <Navigate to="/login" />} />
 
-  {/* NEW: Admin Exclusive Routes */}
-  <Route path="/admin" element={session ? (userRole === 'admin' ? <SystemAdminDashboard /> : <Navigate to="/" />) : <Navigate to="/login" />} />
+            {/* Admin Exclusive Routes */}
+            <Route path="/admin" element={session ? (userRole === 'admin' ? <SystemAdminDashboard /> : <Navigate to="/" />) : <Navigate to="/login" />} />
 
-  {/* Attendee / Global Routes */}
-  <Route path="/saved" element={session ? <SavedArchives /> : <Navigate to="/login" />} />
-  <Route path="/settings" element={session ? <AccountSettings /> : <Navigate to="/login" />} />
-  
-</Routes>
+            {/* Attendee / Global Routes */}
+            <Route path="/saved" element={session ? <SavedArchives /> : <Navigate to="/login" />} />
+            <Route path="/settings" element={session ? <AccountSettings /> : <Navigate to="/login" />} />
+            
+          </Routes>
         </main>
       </div>
     </Router>

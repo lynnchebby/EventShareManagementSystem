@@ -7,6 +7,18 @@ export default function AccountSettings() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // --- Editable State Variables ---
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameInput, setEditNameInput] = useState('');
+  const [updatingName, setUpdatingName] = useState(false);
+
+  // --- Strict Password Update States ---
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   // System Preference States (Mocked for UI demonstration)
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
@@ -49,7 +61,80 @@ export default function AccountSettings() {
     }
   };
 
- const handleApplyForOrganiser = async (e) => {
+  // --- NEW: Update Display Name ---
+  const handleUpdateName = async () => {
+    if (!editNameInput.trim()) return;
+    setUpdatingName(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: editNameInput })
+        .eq('id', session.user.id);
+
+      if (error) throw error;
+
+      // Update local state instantly
+      setProfile({ ...profile, full_name: editNameInput });
+      setIsEditingName(false);
+      alert("System Notice: updated successfully.");
+    } catch (err) {
+      alert(`Update Failed: ${err.message}`);
+    } finally {
+      setUpdatingName(false);
+    }
+  };
+
+  // --- NEW: Strict Password Update ---
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      alert("Security Error: The new passwords do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert("Security Notice: Password must be at least 6 characters.");
+      return;
+    }
+    
+    setUpdatingPassword(true);
+    try {
+      // STEP 1: Verify Current Password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        // If sign-in fails, the current password provided was wrong
+        throw new Error("Wrong current password. Verification failed.");
+      }
+
+      // STEP 2: Current password is correct, proceed to update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      // Clean up UI state after success
+      setIsEditingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      alert("Security Notice: Authentication key successfully updated.");
+    } catch (err) {
+      alert(`Password Update Failed: ${err.message}`);
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  const handleApplyForOrganiser = async (e) => {
     e.preventDefault();
     if (!companyName || !verificationId || !reason) {
       alert("System Notice: All verification fields are required.");
@@ -71,17 +156,9 @@ export default function AccountSettings() {
         })
         .eq('id', session.user.id);
 
-      if (error) {
-        console.error("Database Error:", error);
-        throw new Error("Could not save to database. Did you run the SQL command in Supabase?");
-      }
+      if (error) throw new Error("Could not save to database. Did you run the SQL command in Supabase?");
 
-      // THE FIX: Optimistic UI Update. Instantly lock the screen to 'pending' state
-      setProfile((prevProfile) => ({
-        ...prevProfile,
-        application_status: 'pending'
-      }));
-      
+      setProfile((prevProfile) => ({ ...prevProfile, application_status: 'pending' }));
       alert("Application transmitted successfully. Awaiting administrative review.");
       
     } catch (err) {
@@ -89,12 +166,6 @@ export default function AccountSettings() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handlePasswordReset = (e) => {
-    e.preventDefault();
-    // Native Supabase call would go here: supabase.auth.resetPasswordForEmail(userEmail)
-    alert(`System Protocol: A secure password reset link has been routed to ${userEmail}.`);
   };
 
   const handleSystemLogout = async () => {
@@ -137,23 +208,47 @@ export default function AccountSettings() {
           <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9' }}>
             <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4c1d95" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-              Identity Matrix
+              Account Details
             </h3>
           </div>
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
+            {/* INTERACTIVE: Display Name Block */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Display Name</p>
-                <p style={{ margin: '0', fontSize: '16px', color: '#0f172a', fontWeight: '600' }}>{profile?.full_name || displayName}</p>
-              </div>
+              {isEditingName ? (
+                <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
+                  <input
+                    type="text"
+                    value={editNameInput}
+                    onChange={(e) => setEditNameInput(e.target.value)}
+                    placeholder="Enter new display name"
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                  />
+                  <button onClick={handleUpdateName} disabled={updatingName} style={{ padding: '10px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                    {updatingName ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setIsEditingName(false)} style={{ padding: '10px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Display Name</p>
+                    <p style={{ margin: '0', fontSize: '16px', color: '#0f172a', fontWeight: '600' }}>{profile?.full_name || displayName}</p>
+                  </div>
+                  <button onClick={() => { setEditNameInput(profile?.full_name || displayName); setIsEditingName(true); }} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>
+                    Edit Name
+                  </button>
+                </>
+              )}
             </div>
 
             <div style={{ width: '100%', height: '1px', background: '#f1f5f9' }}></div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Network Email</p>
+                <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Address</p>
                 <p style={{ margin: '0', fontSize: '16px', color: '#0f172a', fontWeight: '600' }}>{userEmail}</p>
               </div>
             </div>
@@ -162,7 +257,7 @@ export default function AccountSettings() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Platform Authorization Level</p>
+                <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Role</p>
                 <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '12px', background: userRole === 'admin' ? '#fef2f2' : userRole === 'organiser' ? '#faf5ff' : '#f0fdf4', color: userRole === 'admin' ? '#dc2626' : userRole === 'organiser' ? '#6d28d9' : '#16a34a', padding: '6px 12px', borderRadius: '20px', fontWeight: '800', border: userRole === 'admin' ? '1px solid #fecaca' : userRole === 'organiser' ? '1px solid #e9d5ff' : '1px solid #dcfce3', textTransform: 'uppercase' }}>
                   {userRole}
                 </span>
@@ -172,7 +267,7 @@ export default function AccountSettings() {
           </div>
         </div>
 
-        {/* NEW Section: Organiser Application (Only visible to attendees) */}
+        {/* Section 2: Organiser Application (Only visible to attendees) */}
         {userRole === 'attendee' && (
           <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
             <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
@@ -246,7 +341,7 @@ export default function AccountSettings() {
           </div>
         )}
 
-        {/* Section 2: Security Parameters */}
+        {/* Section 3: Security Parameters */}
         <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
           <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9' }}>
             <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -256,68 +351,78 @@ export default function AccountSettings() {
           </div>
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>Account Password</p>
-                <p style={{ margin: '0', fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Update your secure access key.</p>
+            {/* INTERACTIVE: Change Password Block */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>Account Password</p>
+                  <p style={{ margin: '0', fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Update your secure access key.</p>
+                </div>
+                {!isEditingPassword && (
+                  <button onClick={() => setIsEditingPassword(true)} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s' }}>
+                    Change Password
+                  </button>
+                )}
               </div>
-              <button onClick={handlePasswordReset} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s' }}>
-                Request Reset
-              </button>
+              
+              {isEditingPassword && (
+                <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px', background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Current Password</span>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password to verify identity"
+                      required
+                      style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                    />
+                  </label>
+                  
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>New Password</span>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Min. 6 characters"
+                      required
+                      style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Confirm New Password</span>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-type new password"
+                      required
+                      style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                    />
+                  </label>
+
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    <button type="submit" disabled={updatingPassword} style={{ flex: 1, padding: '10px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: updatingPassword ? 'not-allowed' : 'pointer' }}>
+                      {updatingPassword ? 'Verifying...' : 'Update Password'}
+                    </button>
+                    <button type="button" onClick={() => { setIsEditingPassword(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }} style={{ flex: 1, padding: '10px 16px', background: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             <div style={{ width: '100%', height: '1px', background: '#f1f5f9' }}></div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>Two-Factor Authentication (2FA)</p>
-                <p style={{ margin: '0', fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Require a secondary verification code.</p>
-              </div>
-              <button 
-                onClick={() => setTwoFactorAuth(!twoFactorAuth)}
-                style={{ position: 'relative', width: '44px', height: '24px', background: twoFactorAuth ? '#10b981' : '#cbd5e1', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
-              >
-                <div style={{ position: 'absolute', top: '2px', left: twoFactorAuth ? '22px' : '2px', width: '20px', height: '20px', background: '#ffffff', borderRadius: '50%', transition: 'left 0.3s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }}></div>
-              </button>
-            </div>
+            
 
           </div>
         </div>
 
-        {/* Section 3: System Preferences */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
-          <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9' }}>
-            <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              System Preferences
-            </h3>
-          </div>
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>Email Telemetry & Alerts</p>
-                <p style={{ margin: '0', fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Receive notifications when new assets are deployed.</p>
-              </div>
-              <button 
-                onClick={() => setEmailAlerts(!emailAlerts)}
-                style={{ position: 'relative', width: '44px', height: '24px', background: emailAlerts ? '#4c1d95' : '#cbd5e1', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
-              >
-                <div style={{ position: 'absolute', top: '2px', left: emailAlerts ? '22px' : '2px', width: '20px', height: '20px', background: '#ffffff', borderRadius: '50%', transition: 'left 0.3s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }}></div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 4: Disconnect Layer */}
-        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
-          <button 
-            onClick={handleSystemLogout}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            Disconnect Active Session
-          </button>
-        </div>
+        
 
       </div>
     </div>

@@ -34,7 +34,22 @@ export default function LoginAuth() {
 
       } else if (isSignUp) {
         // --- 2. HANDLE REGISTRATION ---
-        const { data, error } = await supabase.auth.signUp({ email, password });
+
+        // NEW: Kabarak Domain Restriction & Admin Exception
+        const ADMIN_EMAIL = 'ronohlynn2@gmail.com'; 
+        const ALLOWED_DOMAIN = '@kabarak.ac.ke';
+        
+        const userEmail = email.trim().toLowerCase();
+        const isKabarakEmail = userEmail.endsWith(ALLOWED_DOMAIN);
+        const isAdminEmail = userEmail === ADMIN_EMAIL.toLowerCase();
+
+        if (!isKabarakEmail && !isAdminEmail) {
+          alert("Access Restricted: Registrations are strictly limited to Kabarak University emails (@kabarak.ac.ke).");
+          setLoading(false);
+          return; // Stops the registration process immediately
+        }
+
+        const { data, error } = await supabase.auth.signUp({ email: userEmail, password });
         if (error) throw error;
         
         if (data.user) {
@@ -133,7 +148,7 @@ export default function LoginAuth() {
           id="email"
           name="email"
           autoComplete="username email"
-          placeholder="Network Email Address" 
+          placeholder="Email Address Address" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)} 
           required 
