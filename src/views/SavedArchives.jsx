@@ -134,7 +134,7 @@ export default function SavedArchives() {
         <div style={{ textAlign: 'center', padding: '100px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
           <h3 style={{ color: '#0f172a', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Your Archive is Empty</h3>
-          <p style={{ color: '#64748b', margin: '0 0 24px 0', fontSize: '15px', fontWeight: '500' }}>You haven't pinned any event vaults to your personal collection yet.</p>
+          <p style={{ color: '#64748b', margin: '0 0 24px 0', fontSize: '15px', fontWeight: '500' }}>You haven't pinned any event to your personal collection yet.</p>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f8fafc', color: '#4c1d95', border: '1px solid #e2e8f0', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             Explore Discovery Feed

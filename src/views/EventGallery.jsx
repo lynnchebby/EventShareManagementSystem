@@ -101,6 +101,8 @@ export default function EventGallery() {
     );
   }
 
+  const isUpcoming = new Date(eventData.event_date) > new Date();
+
   return (
     <div style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
       
@@ -130,7 +132,7 @@ export default function EventGallery() {
             {eventData.venue_name}, {eventData.location_city}
           </p>
 
-          {/* UPDATED: Detailed Description Rendering */}
+          {/* Detailed Description Rendering */}
           {eventData.detailed_description && (
             <p style={{ margin: '16px 0 0 0', fontSize: '15px', color: '#475569', lineHeight: '1.6', maxWidth: '600px' }}>
               {eventData.detailed_description}
@@ -161,26 +163,42 @@ export default function EventGallery() {
                 </div>
               </div>
             )}
+
+            {/* NEW: Previous Edition helper embedded next to contacts */}
+            {isUpcoming && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', maxWidth: '700px' }}>
+                <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Previous Editions</p>
+                  <p style={{ fontSize: '13px', color: '#0f172a', margin: '0', fontWeight: '500', lineHeight: '1.4' }}>
+To view past photos, search for this event on the Discovery page and filter by 'Past Events                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* The New Bulk Download Button */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
-          <button 
-            onClick={handleBulkDownload} 
-            disabled={downloadingZip || photos.length === 0}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', background: downloadingZip ? '#c4b5fd' : '#4c1d95', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: (downloadingZip || photos.length === 0) ? 'not-allowed' : 'pointer', fontSize: '15px', fontWeight: '800', boxShadow: '0 4px 10px rgba(76, 29, 149, 0.2)', transition: 'all 0.2s' }}
-          >
-            {downloadingZip ? (
-              <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 2s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line></svg> Packaging Files...</>
-            ) : (
-              <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Archive (.zip)</>
-            )}
-          </button>
-          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-            {photos.length} Total Assets
-          </span>
-        </div>
+        {/* The Bulk Download Button (Hidden if event is in the future) */}
+        {!isUpcoming && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
+            <button 
+              onClick={handleBulkDownload} 
+              disabled={downloadingZip || photos.length === 0}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', background: downloadingZip ? '#c4b5fd' : '#4c1d95', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: (downloadingZip || photos.length === 0) ? 'not-allowed' : 'pointer', fontSize: '15px', fontWeight: '800', boxShadow: '0 4px 10px rgba(76, 29, 149, 0.2)', transition: 'all 0.2s' }}
+            >
+              {downloadingZip ? (
+                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 2s linear infinite' }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line></svg> Packaging Files...</>
+              ) : (
+                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Archive (.zip)</>
+              )}
+            </button>
+            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+              {photos.length} Total Assets
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Progress Bar for ZIP (Only shows when downloading) */}
@@ -196,35 +214,56 @@ export default function EventGallery() {
         </div>
       )}
 
+      {/* NEW: Upcoming Event Banner (Cleaned up, removed previous editions text) */}
+      {isUpcoming && (
+        <div style={{ textAlign: 'center', padding: '40px 24px', background: '#f3e8ff', borderRadius: '16px', border: '1px solid #e9d5ff', marginBottom: '40px' }}>
+          
+          <h3 style={{ color: '#4c1d95', margin: '0 0 12px 0', fontSize: '22px', fontWeight: '800' }}>Event Photos!</h3>
+          <p style={{ color: '#0f172a', margin: '0', fontSize: '15px', fontWeight: '500' }}>
+            The official event images will be uploaded here after the event takes place.
+          </p>
+        </div>
+      )}
+
       {/* The Media Grid (With Lazy Loading Enabled) */}
       {photos.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {photos.map(photo => (
-            <div key={photo.id} style={{ background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'transform 0.2s', ':hover': { transform: 'scale(1.02)' } }}>
-              {/* NOTE: loading="lazy" is the performance optimization trick here! */}
-              <img 
-                src={photo.original_url} 
-                alt="Event Asset" 
-                loading="lazy" 
-                style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }} 
-              />
-              <a 
-                href={photo.original_url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={{ display: 'block', width: '100%', padding: '12px', background: '#ffffff', color: '#475569', textAlign: 'center', fontSize: '13px', fontWeight: '700', textDecoration: 'none', borderTop: '1px solid #e2e8f0' }}
-              >
-                View Full Resolution
-              </a>
-            </div>
-          ))}
+        <div>
+          {/* Label images as posters if the event hasn't happened yet */}
+          {isUpcoming && (
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px' }}>
+              Promotional Posters
+            </h3>
+          )}
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+            {photos.map(photo => (
+              <div key={photo.id} style={{ background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'transform 0.2s', ':hover': { transform: 'scale(1.02)' } }}>
+                <img 
+                  src={photo.original_url} 
+                  alt="Event Asset" 
+                  loading="lazy" 
+                  style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }} 
+                />
+                <a 
+                  href={photo.original_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  style={{ display: 'block', width: '100%', padding: '12px', background: '#ffffff', color: '#475569', textAlign: 'center', fontSize: '13px', fontWeight: '700', textDecoration: 'none', borderTop: '1px solid #e2e8f0' }}
+                >
+                  View Full Resolution
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '100px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-          <h3 style={{ color: '#0f172a', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Array Empty</h3>
-          <p style={{ color: '#64748b', margin: '0', fontSize: '15px', fontWeight: '500' }}>No media files have been sent to this node yet.</p>
-        </div>
+        !isUpcoming && (
+          <div style={{ textAlign: 'center', padding: '100px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <h3 style={{ color: '#0f172a', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Gallery Empty</h3>
+            <p style={{ color: '#64748b', margin: '0', fontSize: '15px', fontWeight: '500' }}>No media files have been added to this event yet.</p>
+          </div>
+        )
       )}
     </div>
   );

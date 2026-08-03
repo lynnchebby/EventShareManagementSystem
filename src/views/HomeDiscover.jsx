@@ -218,7 +218,7 @@ export default function HomeDiscover() {
   };
 
   const handleDeleteSinglePhoto = async (photoItem) => {
-    if (!window.confirm("System Prompt: Delete this individual uncompressed asset permanently?")) return;
+    if (!window.confirm("Warning: Continue to delete this image")) return;
     try {
       const urlParts = photoItem.original_url.split('/event-photos/');
       if (urlParts.length > 1) {
@@ -269,7 +269,7 @@ export default function HomeDiscover() {
         if (photoTableError) throw photoTableError;
       }
       
-      alert(`System Success: ${appendFiles.length} additional assets injected into the array.`);
+      alert(` Success: ${appendFiles.length} Image added to the event.`);
       setAppendFiles([]);
       
       const { data, error } = await supabase.from('photos').select('*').eq('event_id', eventId);
@@ -360,7 +360,7 @@ export default function HomeDiscover() {
           <input 
             type="text" 
             className="search-bar-item"
-            placeholder="Search registry by title, venue, or keywords..." 
+            placeholder="Search event by title, venue, or keywords..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ width: '100%', padding: '14px 20px 14px 48px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#0f172a', backgroundColor: '#ffffff', fontWeight: '500', boxSizing: 'border-box', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
@@ -378,10 +378,12 @@ export default function HomeDiscover() {
             <option value="All">All Categories</option>
             <option value="tech">Technology</option>
             <option value="sports">Sports</option>
-            <option value="concerts">Concerts</option>
-            <option value="community">Community</option>
-            <option value="wedding">Weddings</option>
-            <option value="corporate">Corporate</option>
+            <option value="medicine">Medicine</option>
+            <option value="education">Education</option>
+            <option value="Music & Media">Music & Media</option>
+            <option value="Business & Economics">Business & Economics</option>
+            <option value="Law">Law</option>
+
           </select>
           <div style={{ position: 'absolute', right: '14px', pointerEvents: 'none', display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '4px', borderRadius: '6px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -396,7 +398,7 @@ export default function HomeDiscover() {
             onChange={(e) => setSelectedCity(e.target.value)}
             style={{ width: '100%', padding: '14px 40px 14px 42px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '14px', cursor: 'pointer', outline: 'none', color: '#1e293b', fontWeight: '600', appearance: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           >
-            <option value="All">Global Matrix</option>
+            <option value="All">Location</option>
             <option value="Nairobi">Nairobi</option>
             <option value="Nakuru">Nakuru</option>
             <option value="Mombasa">Mombasa</option>

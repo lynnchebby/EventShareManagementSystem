@@ -76,7 +76,7 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc', color: '#4c1d95' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f3e8ff', color: '#4c1d95' }}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 2s linear infinite', marginBottom: '16px' }}>
           <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
         </svg>
@@ -106,7 +106,7 @@ export default function App() {
       <div style={{ 
         minHeight: '100vh', 
         fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
-        background: '#f8fafc',
+        background: '#f3e8ff',
         backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(76, 29, 149, 0.08) 0%, rgba(248, 250, 252, 0) 50%)',
         position: 'relative'
       }}>
@@ -114,7 +114,7 @@ export default function App() {
         {/* Injecting CSS to handle the hover effects and white SVG colors when active */}
         <style>
           {`
-            .nav-item:hover:not(.active) { color: #4c1d95 !important; background: #f1f5f9; }
+            .nav-item:hover:not(.active) { color: #4c1d95 !important; background: #e9d5ff; }
             .nav-item:hover:not(.active) svg { stroke: #4c1d95 !important; }
             .nav-item.active svg { stroke: #ffffff !important; }
             .signout-btn:hover { color: #ef4444 !important; background: #fef2f2; border-radius: 8px; }

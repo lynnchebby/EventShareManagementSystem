@@ -103,6 +103,46 @@ export default function SystemAdminDashboard() {
     }
   };
 
+  // NEW: Suspend User Logic
+  const handleSuspendUser = async (userId) => {
+    if (!window.confirm(`SECURITY WARNING: Confirm suspension of this user profile? They will be locked out of the system.`)) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'suspended' })
+        .eq('id', userId);
+
+      if (error) throw error;
+      setProfiles(profiles.map(p => p.id === userId ? { ...p, role: 'suspended' } : p));
+      alert("System Notice: User access suspended.");
+    } catch (err) {
+      alert(`Suspension Failure: ${err.message}`);
+    }
+  };
+
+  // NEW: Restore User Logic
+  // NEW: Smart Restore User Logic
+  const handleRestoreUser = async (userId) => {
+    try {
+      // Find the user in our current list to check their past credentials
+      const userToRestore = profiles.find(p => p.id === userId);
+      
+      // If their application was approved in the past, they get organiser back. Otherwise, attendee.
+      const correctRole = userToRestore?.application_status === 'approved' ? 'organiser' : 'attendee';
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: correctRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+      
+      setProfiles(profiles.map(p => p.id === userId ? { ...p, role: correctRole } : p));
+      alert(`System Notice: User access successfully restored to ${correctRole} status.`);
+    } catch (err) {
+      alert(`Restore Failure: ${err.message}`);
+    }
+  };
   const pendingApplications = profiles.filter(p => p.application_status === 'pending');
 
   if (loading) {
@@ -146,7 +186,7 @@ export default function SystemAdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
             <span style={{ display: 'inline-block', fontSize: '11px', background: '#fef2f2', color: '#dc2626', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', border: '1px solid #fee2e2', marginBottom: '8px' }}>
-              Root Administrator Mode
+              Administrator Mode
             </span>
             <h2 style={{ fontSize: '28px', color: '#0f172a', margin: '0 0 4px 0', fontWeight: '800' }}>Command Center</h2>
             <p style={{ color: '#64748b', fontSize: '14px', margin: '0', fontWeight: '500' }}>Logged in as: {currentUserEmail}</p>
@@ -262,6 +302,7 @@ export default function SystemAdminDashboard() {
                     <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>Assigned Role</th>
                     <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>Application Status</th>
                     <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>Node ID</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -277,6 +318,18 @@ export default function SystemAdminDashboard() {
                         {profile.application_status || 'none'}
                       </td>
                       <td style={{ padding: '16px 24px', fontSize: '13px', fontFamily: 'monospace', color: '#64748b' }}>{profile.id}</td>
+                      <td style={{ padding: '16px 24px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          {/* Prevent admins from suspending other admins */}
+                          {profile.role !== 'admin' && (
+                            profile.role === 'suspended' ? (
+                              <button onClick={() => handleRestoreUser(profile.id)} style={{ background: '#f0fdf4', color: '#10b981', border: '1px solid #dcfce3', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>Restore Access</button>
+                            ) : (
+                              <button onClick={() => handleSuspendUser(profile.id)} style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>Suspend User</button>
+                            )
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

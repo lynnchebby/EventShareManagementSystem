@@ -108,14 +108,14 @@ export default function OrganiserDashboard() {
     }
   };
 
-  const handleFileChange = (e) => {
+const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     let validFiles = [];
     let rejectedCount = 0;
 
     files.forEach(file => {
       const fileSizeInMB = file.size / (1024 * 1024);
-      if (fileSizeInMB <= 5) {
+      if (fileSizeInMB <= 20) {
         validFiles.push(file);
       } else {
         rejectedCount++;
@@ -123,7 +123,7 @@ export default function OrganiserDashboard() {
     });
 
     if (rejectedCount > 0) {
-      alert(`System Notice: ${rejectedCount} file(s) rejected. Individual file capacity ceiling is strictly 5MB.`);
+      alert(`System Notice: ${rejectedCount} file(s) rejected. Individual file capacity ceiling is strictly 20MB.`);
     }
     setSelectedFiles(validFiles.slice(0, 100));
   };
@@ -135,11 +135,11 @@ export default function OrganiserDashboard() {
 
     files.forEach(file => {
       const fileSizeInMB = file.size / (1024 * 1024);
-      if (fileSizeInMB <= 5) validFiles.push(file);
+      if (fileSizeInMB <= 20) validFiles.push(file);
       else rejectedCount++;
     });
 
-    if (rejectedCount > 0) alert(`System Notice: ${rejectedCount} file(s) rejected. Capacity ceiling is 5MB.`);
+    if (rejectedCount > 0) alert(`System Notice: ${rejectedCount} file(s) rejected. Capacity ceiling is strictly 20MB.`);
     setAppendFiles(validFiles.slice(0, 100));
   };
 
@@ -163,7 +163,7 @@ export default function OrganiserDashboard() {
         if (photoTableError) throw photoTableError;
       }
       
-      alert(`System Success: ${appendFiles.length} additional assets injected into the array.`);
+      alert(`System Success: ${appendFiles.length} additional image added into the gallery.`);
       setAppendFiles([]);
       
       const { data, error } = await supabase.from('photos').select('*').eq('event_id', eventId);
@@ -226,15 +226,15 @@ export default function OrganiserDashboard() {
       if (subs && subs.length > 0) {
         const emailPromises = subs.map(sub => {
           return emailjs.send(
-            'YOUR_SERVICE_ID', 
-            'YOUR_TEMPLATE_ID', 
+            'service_7664bkp', 
+            'template_e38ztqb', 
             {
               to_email: sub.attendee_email,
               organiser_name: organiserName,
               event_name: title,
               event_date: date
             },
-            'YOUR_PUBLIC_KEY' 
+            'KB-iSG5H1iEZlcRsZ' 
           );
         });
         await Promise.all(emailPromises);
@@ -300,10 +300,13 @@ export default function OrganiserDashboard() {
               </select>
 
               <select value={eventType} onChange={(e) => setEventType(e.target.value)} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '14px', outline: 'none' }}>
-                <option value="tech">Technology Event</option>
-                <option value="sports">Sports Event</option>
-                <option value="concerts"> Media Concert</option>
-                <option value="community"> Community Outreach</option>
+                <option value="tech">Technology</option>
+            <option value="sports">Sports</option>
+            <option value="medicine">Medicine</option>
+            <option value="education">Education</option>
+            <option value="Music & Media">Music & Media</option>
+            <option value="Business & Economics">Business & Economics</option>
+            <option value="Law">Law</option>
               </select>
               
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }} />
@@ -376,12 +379,12 @@ export default function OrganiserDashboard() {
 
           <div style={{ background: '#f9f5fe', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
             <h4 style={{ color: '#0f172a', margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}> Media Image Uploads</h4>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', fontWeight: '500' }}>Strict Parameters: Global limit 100 entries. Matrix ceiling 5MB per block.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', fontWeight: '500' }}>Upload a promotional flyer for upcoming events, or the official photo gallery after the event concludes. <br />Upload Limits: Up to 100 images, maximum 20MB per file. </p>
             <input type="file" multiple accept="image/*" onChange={handleFileChange} required={myDeployedEvents.length === 0} style={{ fontSize: '13px', color: '#475569', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', width: '100%', boxSizing: 'border-box' }} />
           </div>
 
           <button type="submit" disabled={uploading} style={{ padding: '16px', background: uploading ? '#c4b5fd' : '#4c1d95', color: '#ffffff', border: 'none', borderRadius: '10px', cursor: uploading ? 'not-allowed' : 'pointer', fontWeight: '800', fontSize: '15px', letterSpacing: '0.5px', transition: 'background 0.2s', marginTop: '10px' }}>
-            {uploading ? 'Executing Cloud Deployment Sequence...' : 'Deploy Event '}
+            {uploading ? 'Deploying event...' : 'Deploy Event '}
           </button>
 
           {statusMessage && <div style={{ background: '#f5f3ff', color: '#5b21b6', padding: '14px', borderRadius: '8px', border: '1px solid #ede9fe', textAlign: 'center', fontSize: '13px', fontWeight: '600' }}>{statusMessage}</div>}
@@ -391,7 +394,7 @@ export default function OrganiserDashboard() {
       <div style={{ background: '#f9f5fe', padding: '40px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
         <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: '0', color: '#0f172a', fontSize: '18px', fontWeight: '800', letterSpacing: '-0.3px' }}>DEPLOYED EVENTS</h3>
-          <span style={{ background: '#f8fafc', color: '#64748b', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #e2e8f0' }}>Nodes Online: {myDeployedEvents.length}</span>
+          <span style={{ background: '#f8fafc', color: '#64748b', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #e2e8f0' }}>Events Online: {myDeployedEvents.length}</span>
         </div>
 
         <div style={{ marginBottom: '24px' }}>
@@ -461,7 +464,7 @@ export default function OrganiserDashboard() {
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Date</span>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</span>
           <input 
             type="date" 
             value={editDate} 
@@ -477,10 +480,13 @@ export default function OrganiserDashboard() {
             onChange={(e) => setEditEventType(e.target.value)} 
             style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#fff', outline: 'none', color: '#0f172a' }}
           >
-            <option value="tech"> Technology Event</option>
-            <option value="sports"> Sports Event</option>
-            <option value="concerts"> Media Concert</option>
-            <option value="community">Community Outreach</option>
+            <option value="tech">Technology</option>
+            <option value="sports">Sports</option>
+            <option value="medicine">Medicine</option>
+            <option value="education">Education</option>
+            <option value="Music & Media">Music & Media</option>
+            <option value="Business & Economics">Business & Economics</option>
+            <option value="Law">Law</option>
           </select>
         </label>
 
@@ -552,10 +558,10 @@ export default function OrganiserDashboard() {
 
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
         <button onClick={() => handleUpdateEventDetails(ev.id)} style={{ padding: '10px 20px', background: '#4c1d95', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '800' }}>
-          Save edit
+          Save 
         </button>
         <button onClick={() => setEditingEventId(null)} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '800' }}>
-          Cancel edit
+          Cancel 
         </button>
       </div>
     </div>
@@ -565,7 +571,7 @@ export default function OrganiserDashboard() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                             <span style={{ fontWeight: '800', fontSize: '18px', color: '#0f172a' }}>{ev.title}</span>
-                            <span style={{ fontSize: '11px', background: '#ffffff', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', color: '#64748b', fontWeight: '600' }}>Timestamp: {ev.event_date}</span>
+                            <span style={{ fontSize: '11px', background: '#ffffff', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', color: '#64748b', fontWeight: '600' }}>Date: {ev.event_date}</span>
                           </div>
                           <p style={{ margin: '0', fontSize: '13px', color: '#475569', fontWeight: '500' }}>Venue: {ev.venue_name}, {ev.location_city}</p>
                           
@@ -598,7 +604,7 @@ export default function OrganiserDashboard() {
                       
                       <div style={{ marginBottom: '24px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', gap: '16px', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase' }}>Inject Additional Media Blocks</p>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase' }}>Choose an image to add to this event </p>
                           <input type="file" multiple accept="image/*" onChange={handleAppendFileChange} disabled={appendingPhotos || isOverLimit} style={{ fontSize: '13px', color: '#475569', width: '100%' }} />
                         </div>
                         <button 
@@ -612,7 +618,7 @@ export default function OrganiserDashboard() {
 
                       <div style={{ width: '100%', height: '1px', background: '#e2e8f0', marginBottom: '24px' }}></div>
 
-                      <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Diagnostic View: Select obsolete or fractured capture components to forcefully prune from the bucket sequence.</p>
+                      <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Event  View: select image to remove it from this event gallery.</p>
                       
                       {loadingPhotos ? (
                         <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>Loading file matrix index streams...</p>
